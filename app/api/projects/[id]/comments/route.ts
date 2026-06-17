@@ -1,0 +1,21 @@
+import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { getComments, createComment } from "@/services/commentService";
+
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: "Ikke innlogget" }, { status: 401 });
+  const { id } = await params;
+  const comments = await getComments(id);
+  return NextResponse.json(comments);
+}
+
+export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Ikke innlogget" }, { status: 401 });
+  const { id } = await params;
+  const { content } = await req.json();
+  if (!content?.trim()) return NextResponse.json({ error: "Tomt innhold" }, { status: 400 });
+  const comment = await createComment({ projectId: id, userId: session.user.id, content });
+  return NextResponse.json(comment, { status: 201 });
+}
