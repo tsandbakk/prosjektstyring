@@ -27,7 +27,7 @@ export default async function HomePage() {
         weeklyItems={weeklyItems}
         recentComments={recentComments}
         currentUserId={session.user.id}
-        projects={allProjects.map((p) => ({ id: p.id, title: p.title }))}
+        projects={allProjects.map((p: { id: string; title: string }) => ({ id: p.id, title: p.title }))}
       />
     </div>
   );
