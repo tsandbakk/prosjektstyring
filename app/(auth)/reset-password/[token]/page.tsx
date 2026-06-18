@@ -3,6 +3,8 @@ import { ResetPasswordForm } from "./reset-password-form";
 import { FolderKanban } from "lucide-react";
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 export default async function ResetPasswordPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const record = await getValidResetToken(token);

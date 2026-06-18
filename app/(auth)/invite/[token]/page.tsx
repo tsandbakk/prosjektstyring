@@ -2,6 +2,8 @@ import { FolderKanban } from "lucide-react";
 import { getValidInvite } from "@/services/inviteService";
 import { InviteForm } from "./invite-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function InvitePage({
   params,
 }: {
