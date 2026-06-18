@@ -3,12 +3,21 @@ import { createNotification } from "./notificationService";
 
 export type CommentWithAuthor = Awaited<ReturnType<typeof getComments>>[number];
 
-export async function getComments(projectId: string) {
+export async function getComments(projectId: string, since?: Date) {
   return prisma.comment.findMany({
-    where: { projectId },
+    where: {
+      projectId,
+      ...(since ? { createdAt: { gt: since } } : {}),
+    },
     include: { author: { select: { id: true, name: true } } },
     orderBy: { createdAt: "asc" },
   });
+}
+
+export async function deleteComment(commentId: string, userId: string) {
+  const comment = await prisma.comment.findFirst({ where: { id: commentId, userId } });
+  if (!comment) return null;
+  return prisma.comment.delete({ where: { id: commentId } });
 }
 
 export type RecentComment = Awaited<ReturnType<typeof getRecentComments>>[number];
