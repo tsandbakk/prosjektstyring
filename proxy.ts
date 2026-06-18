@@ -7,7 +7,10 @@ export async function proxy(req: NextRequest) {
   const isLoggedIn = !!token;
   const isAuthPage =
     req.nextUrl.pathname.startsWith("/login") ||
-    req.nextUrl.pathname.startsWith("/register");
+    req.nextUrl.pathname.startsWith("/register") ||
+    req.nextUrl.pathname.startsWith("/forgot-password") ||
+    req.nextUrl.pathname.startsWith("/reset-password") ||
+    req.nextUrl.pathname.startsWith("/invite");
 
   if (!isLoggedIn && !isAuthPage) {
     return NextResponse.redirect(new URL("/login", req.url));
