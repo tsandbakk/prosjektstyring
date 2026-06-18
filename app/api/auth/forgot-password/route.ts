@@ -7,13 +7,16 @@ export async function POST(req: Request) {
   if (!email) return NextResponse.json({ error: "E-post mangler" }, { status: 400 });
 
   const token = await createPasswordResetToken(email);
+  console.log("[forgot-password] email:", email, "token found:", !!token);
 
   if (token) {
     try {
       const resetUrl = `${process.env.NEXTAUTH_URL}/reset-password/${token}`;
+      console.log("[forgot-password] sending email to:", email);
       await sendPasswordResetEmail(email, resetUrl);
+      console.log("[forgot-password] email sent ok");
     } catch (err) {
-      console.error("Failed to send password reset email:", err);
+      console.error("[forgot-password] Failed to send email:", err);
     }
   }
 
