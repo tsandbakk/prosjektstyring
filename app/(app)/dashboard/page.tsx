@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getProjects } from "@/services/projectService";
@@ -16,11 +17,13 @@ export default async function DashboardPage() {
   ]);
 
   return (
-    <DashboardClient
-      projects={projects}
-      users={users}
-      currentUserId={session.user.id}
-      initialWeeklyItems={weeklyItems}
-    />
+    <Suspense>
+      <DashboardClient
+        projects={projects}
+        users={users}
+        currentUserId={session.user.id}
+        initialWeeklyItems={weeklyItems}
+      />
+    </Suspense>
   );
 }

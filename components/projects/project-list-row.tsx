@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Pencil, Trash2, MessageCircle } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Pencil, Trash2, MessageCircle, Check, UserPlus } from "lucide-react";
 import { Draggable } from "@hello-pangea/dnd";
 import { ProjectStatus } from "@prisma/client";
 import { useSession } from "next-auth/react";
@@ -24,13 +24,141 @@ interface Props {
   isLast: boolean;
   selected: boolean;
   onToggleSelect: () => void;
+  highlighted?: boolean;
+  onClearHighlight?: () => void;
 }
 
 function initials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
-export function ProjectListRow({ project, users, onMutate, index, isLast, selected, onToggleSelect }: Props) {
+function MemberPicker({
+  project,
+  users,
+  onMutate,
+}: {
+  project: ProjectWithMembers;
+  users: User[];
+  onMutate: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [memberIds, setMemberIds] = useState(project.members.map((m) => m.userId));
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMemberIds(project.members.map((m) => m.userId));
+  }, [project.members]);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  function toggle(id: string) {
+    setMemberIds((prev) => prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]);
+  }
+
+  async function save() {
+    setSaving(true);
+    await fetch(`/api/projects/${project.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ memberIds }),
+    });
+    setSaving(false);
+    setOpen(false);
+    onMutate();
+  }
+
+  return (
+    <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1 group/members focus:outline-none"
+        title="Endre medlemmer"
+      >
+        <div className="flex -space-x-2">
+          {project.members.slice(0, 3).map(({ user }) => (
+            <Avatar key={user.id} className="h-6 w-6 border-2 border-background">
+              <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
+                {initials(user.name)}
+              </AvatarFallback>
+            </Avatar>
+          ))}
+          {project.members.length > 3 && (
+            <div className="h-6 w-6 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[9px] text-muted-foreground font-medium">
+              +{project.members.length - 3}
+            </div>
+          )}
+          {project.members.length === 0 && (
+            <div className="h-6 w-6 rounded-full border border-dashed border-border flex items-center justify-center opacity-0 group-hover/members:opacity-100 transition-opacity">
+              <UserPlus className="h-3 w-3 text-muted-foreground" />
+            </div>
+          )}
+        </div>
+        {project.members.length === 0 && (
+          <span className="text-xs text-muted-foreground group-hover/members:hidden">—</span>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute top-full right-0 mt-1.5 z-50 bg-background border border-border rounded-lg shadow-lg w-48 py-1">
+          <p className="text-xs text-muted-foreground px-3 py-1.5 border-b border-border mb-1">Medlemmer</p>
+          {users.map((user) => {
+            const checked = memberIds.includes(user.id);
+            return (
+              <button
+                key={user.id}
+                onClick={() => toggle(user.id)}
+                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50 transition-colors text-left"
+              >
+                <div className={cn(
+                  "h-4 w-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors",
+                  checked ? "bg-primary border-primary" : "border-border"
+                )}>
+                  {checked && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
+                </div>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Avatar className="h-5 w-5 flex-shrink-0">
+                    <AvatarFallback className="text-[8px] bg-primary/10 text-primary">
+                      {initials(user.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm truncate">{user.name}</span>
+                </div>
+              </button>
+            );
+          })}
+          <div className="border-t border-border mt-1 px-3 py-2">
+            <button
+              onClick={save}
+              disabled={saving}
+              className="w-full text-xs font-medium bg-primary text-primary-foreground rounded-md py-1.5 hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              {saving ? "Lagrer…" : "Lagre"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function ProjectListRow({
+  project,
+  users,
+  onMutate,
+  index,
+  isLast,
+  selected,
+  onToggleSelect,
+  highlighted,
+  onClearHighlight,
+}: Props) {
   const { data: session } = useSession();
   const [editOpen, setEditOpen] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
@@ -55,6 +183,10 @@ export function ProjectListRow({ project, users, onMutate, index, isLast, select
     onMutate();
   }
 
+  function handleRowClick() {
+    if (highlighted) onClearHighlight?.();
+  }
+
   return (
     <>
       <Draggable draggableId={project.id} index={index}>
@@ -62,11 +194,13 @@ export function ProjectListRow({ project, users, onMutate, index, isLast, select
           <div
             ref={provided.innerRef}
             {...provided.draggableProps}
+            onClick={handleRowClick}
             className={cn(
-              "grid grid-cols-[auto_auto_1fr_auto_auto_auto_auto] items-center px-4 py-3 group bg-background",
+              "grid grid-cols-[auto_auto_1fr_auto_auto_auto_auto] items-center px-4 py-3 group bg-background transition-colors",
               !isLast && "border-b border-border",
               snapshot.isDragging ? "shadow-lg opacity-90 rounded-md" : "hover:bg-muted/30",
-              selected && "bg-primary/5"
+              selected && "bg-primary/5",
+              highlighted && "bg-amber-50 dark:bg-amber-950/30 ring-1 ring-inset ring-amber-300 dark:ring-amber-700/50"
             )}
           >
             {/* Checkbox */}
@@ -98,7 +232,7 @@ export function ProjectListRow({ project, users, onMutate, index, isLast, select
               </svg>
             </div>
 
-            {/* Title + description + customer — clickable to edit */}
+            {/* Title + description + customer */}
             <button
               className="min-w-0 pr-4 text-left focus:outline-none"
               onClick={() => setEditOpen(true)}
@@ -112,7 +246,7 @@ export function ProjectListRow({ project, users, onMutate, index, isLast, select
               )}
             </button>
 
-            {/* Status — inline picker */}
+            {/* Status */}
             <div className="w-28 flex justify-center" onClick={(e) => e.stopPropagation()}>
               <StatusPicker
                 projectId={project.id}
@@ -121,25 +255,9 @@ export function ProjectListRow({ project, users, onMutate, index, isLast, select
               />
             </div>
 
-            {/* Members */}
+            {/* Members — inline picker */}
             <div className="w-24 flex justify-center">
-              <div className="flex -space-x-2">
-                {project.members.slice(0, 3).map(({ user }) => (
-                  <Avatar key={user.id} className="h-6 w-6 border-2 border-background">
-                    <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
-                      {initials(user.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                ))}
-                {project.members.length > 3 && (
-                  <div className="h-6 w-6 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[9px] text-muted-foreground font-medium">
-                    +{project.members.length - 3}
-                  </div>
-                )}
-                {project.members.length === 0 && (
-                  <span className="text-xs text-muted-foreground">—</span>
-                )}
-              </div>
+              <MemberPicker project={project} users={users} onMutate={onMutate} />
             </div>
 
             {/* Comments */}
@@ -173,14 +291,14 @@ export function ProjectListRow({ project, users, onMutate, index, isLast, select
             {/* Row actions */}
             <div className="w-16 flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
-                onClick={() => setEditOpen(true)}
+                onClick={(e) => { e.stopPropagation(); setEditOpen(true); }}
                 className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                 title="Rediger"
               >
                 <Pencil className="h-3.5 w-3.5" />
               </button>
               <button
-                onClick={handleDelete}
+                onClick={(e) => { e.stopPropagation(); handleDelete(); }}
                 className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
                 title="Slett"
               >

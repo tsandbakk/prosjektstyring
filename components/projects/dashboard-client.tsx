@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useTransition, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Plus, ChevronDown, Check, Search, Trash2, X } from "lucide-react";
 import { DragDropContext, Droppable, DropResult, DragStart } from "@hello-pangea/dnd";
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,9 @@ interface Props {
 
 export function DashboardClient({ projects: initialProjects, users, currentUserId, initialWeeklyItems }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
+  const [highlightedId, setHighlightedId] = useState<string | null>(searchParams.get("project"));
   const [projects, setProjects] = useState(initialProjects);
   const [createOpen, setCreateOpen] = useState(false);
   const [showMine, setShowMine] = useState(true);
@@ -120,6 +122,25 @@ export function DashboardClient({ projects: initialProjects, users, currentUserI
   const refresh = useCallback(() => {
     startTransition(() => router.refresh());
   }, [router]);
+
+  function clearHighlight() {
+    setHighlightedId(null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("project");
+    router.replace(`/dashboard${params.size > 0 ? `?${params}` : ""}`, { scroll: false });
+  }
+
+  // Scroll highlighted row into view and switch to "Alle" if needed
+  useEffect(() => {
+    if (!highlightedId) return;
+    const inMine = initialProjects.find(
+      (p) => p.id === highlightedId && p.members.some((m) => m.userId === currentUserId)
+    );
+    if (!inMine) setShowMine(false);
+    setTimeout(() => {
+      document.getElementById(`project-row-${highlightedId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 100);
+  }, [highlightedId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleMember(id: string) {
     setMemberFilters((prev) =>
@@ -531,16 +552,19 @@ export function DashboardClient({ projects: initialProjects, users, currentUserI
                   {(provided) => (
                     <div ref={provided.innerRef} {...provided.droppableProps}>
                       {filtered.map((project, i) => (
-                        <ProjectListRow
-                          key={project.id}
-                          project={project}
-                          users={users}
-                          onMutate={refresh}
-                          index={i}
-                          isLast={i === filtered.length - 1}
-                          selected={selectedIds.has(project.id)}
-                          onToggleSelect={() => toggleSelect(project.id)}
-                        />
+                        <div key={project.id} id={`project-row-${project.id}`}>
+                          <ProjectListRow
+                            project={project}
+                            users={users}
+                            onMutate={refresh}
+                            index={i}
+                            isLast={i === filtered.length - 1}
+                            selected={selectedIds.has(project.id)}
+                            onToggleSelect={() => toggleSelect(project.id)}
+                            highlighted={highlightedId === project.id}
+                            onClearHighlight={clearHighlight}
+                          />
+                        </div>
                       ))}
                       {provided.placeholder}
                     </div>
