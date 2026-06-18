@@ -279,21 +279,24 @@ export function ProjectListRow({
             {/* Comments */}
             <button
               onClick={(e) => { e.stopPropagation(); setCommentOpen(true); }}
-              className="w-40 flex items-center gap-2 px-2 text-left group/comment focus:outline-none"
+              className={cn(
+                "w-40 flex items-center gap-2 px-2 text-left group/comment focus:outline-none rounded-md transition-colors",
+                hasUnread && "bg-primary/8 px-2 py-1 -mx-0 ring-1 ring-primary/20"
+              )}
             >
               <div className="relative flex-shrink-0">
                 <MessageCircle className={cn(
                   "h-4 w-4 transition-colors",
-                  commentCount > 0 ? "text-muted-foreground group-hover/comment:text-foreground" : "text-muted-foreground/30 group-hover/comment:text-muted-foreground"
+                  hasUnread ? "text-primary" : commentCount > 0 ? "text-muted-foreground group-hover/comment:text-foreground" : "text-muted-foreground/30 group-hover/comment:text-muted-foreground"
                 )} />
                 {hasUnread && (
-                  <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary border border-background" />
+                  <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary border-2 border-background animate-pulse" />
                 )}
               </div>
               {lastComment ? (
                 <span className={cn(
-                  "text-xs truncate transition-colors group-hover/comment:text-foreground",
-                  hasUnread ? "text-foreground font-medium" : "text-muted-foreground"
+                  "text-xs truncate transition-colors",
+                  hasUnread ? "text-primary font-semibold group-hover/comment:text-primary/80" : "text-muted-foreground group-hover/comment:text-foreground"
                 )}>
                   {lastComment.content}
                 </span>
