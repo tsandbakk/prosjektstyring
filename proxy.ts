@@ -3,7 +3,12 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export async function proxy(req: NextRequest) {
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const isSecure = req.nextUrl.protocol === "https:";
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+    cookieName: isSecure ? "__Secure-authjs.session-token" : "authjs.session-token",
+  });
   const isLoggedIn = !!token;
   const isAuthPage =
     req.nextUrl.pathname.startsWith("/login") ||
