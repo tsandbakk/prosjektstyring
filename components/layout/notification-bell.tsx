@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Bell } from "lucide-react";
+import { Bell, MessageCircle, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
@@ -9,14 +9,28 @@ type Notification = {
   id: string;
   type: string;
   message: string;
+  detail: string | null;
   projectId: string | null;
   read: boolean;
   createdAt: string;
 };
 
-function playPling() {
+// Shared AudioContext — unlocked on first user interaction
+let sharedCtx: AudioContext | null = null;
+let audioUnlocked = false;
+
+function unlockAudio() {
+  if (audioUnlocked) return;
   try {
-    const ctx = new AudioContext();
+    sharedCtx = new AudioContext();
+    sharedCtx.resume().then(() => { audioUnlocked = true; });
+  } catch {}
+}
+
+function playPling() {
+  if (!audioUnlocked || !sharedCtx) return;
+  try {
+    const ctx = sharedCtx;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
@@ -28,7 +42,6 @@ function playPling() {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.6);
-    ctx.close();
   } catch {}
 }
 
@@ -40,6 +53,49 @@ function timeAgo(dateStr: string) {
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}t siden`;
   return `${Math.floor(hours / 24)}d siden`;
+}
+
+function NotificationItem({ n, onClose }: { n: Notification; onClose: () => void }) {
+  const isComment = n.type === "COMMENT_ADDED";
+
+  const inner = (
+    <div className={cn("px-4 py-3 transition-colors hover:bg-accent", !n.read && "bg-primary/5")}>
+      <div className="flex items-start gap-2.5">
+        <div className={cn(
+          "flex-shrink-0 mt-0.5 h-6 w-6 rounded-full flex items-center justify-center",
+          isComment ? "bg-primary/10" : "bg-emerald-100 dark:bg-emerald-900/30"
+        )}>
+          {isComment
+            ? <MessageCircle className="h-3.5 w-3.5 text-primary" />
+            : <UserPlus className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+          }
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-foreground leading-snug">{n.message}</p>
+          {isComment && n.detail && (
+            <div className="mt-1.5 rounded-lg rounded-tl-sm bg-muted px-3 py-2 border border-border/50">
+              <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
+                {n.detail}
+              </p>
+            </div>
+          )}
+          <p className="text-[11px] text-muted-foreground mt-1">{timeAgo(n.createdAt)}</p>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (n.projectId) {
+    return (
+      <li className="border-b border-border/50 last:border-0">
+        <Link href={`/dashboard?project=${n.projectId}`} onClick={onClose} className="block">
+          {inner}
+        </Link>
+      </li>
+    );
+  }
+
+  return <li className="border-b border-border/50 last:border-0">{inner}</li>;
 }
 
 export function NotificationBell() {
@@ -55,16 +111,24 @@ export function NotificationBell() {
     setNotifications(data);
 
     const newUnread = data.filter((n) => !n.read);
-    const newIds = newUnread.map((n) => n.id);
-    const hasNew = newIds.some((id) => !prevUnreadIds.current.has(id));
+    const hasNew = newUnread.some((n) => !prevUnreadIds.current.has(n.id));
     if (hasNew && prevUnreadIds.current.size > 0) playPling();
-    prevUnreadIds.current = new Set(newIds);
+    prevUnreadIds.current = new Set(newUnread.map((n) => n.id));
   }, []);
 
   useEffect(() => {
+    // Unlock audio on first user interaction
+    const unlock = () => { unlockAudio(); };
+    document.addEventListener("click", unlock, { once: true });
+    document.addEventListener("keydown", unlock, { once: true });
+
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("click", unlock);
+      document.removeEventListener("keydown", unlock);
+    };
   }, [fetchNotifications]);
 
   useEffect(() => {
@@ -76,8 +140,9 @@ export function NotificationBell() {
   }, []);
 
   async function handleOpen() {
+    const wasOpen = open;
     setOpen((v) => !v);
-    if (!open) {
+    if (!wasOpen) {
       await fetch("/api/notifications", { method: "POST" });
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       prevUnreadIds.current = new Set();
@@ -95,7 +160,7 @@ export function NotificationBell() {
       >
         <Bell className="h-4 w-4" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-destructive text-[10px] font-semibold text-destructive-foreground flex items-center justify-center leading-none">
+          <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-destructive text-[10px] font-bold text-white flex items-center justify-center leading-none">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -111,28 +176,9 @@ export function NotificationBell() {
               Ingen varsler ennå
             </div>
           ) : (
-            <ul className="max-h-80 overflow-y-auto divide-y">
+            <ul className="max-h-96 overflow-y-auto">
               {notifications.map((n) => (
-                <li key={n.id}>
-                  {n.projectId ? (
-                    <Link
-                      href={`/dashboard?project=${n.projectId}`}
-                      onClick={() => setOpen(false)}
-                      className={cn(
-                        "flex flex-col gap-0.5 px-4 py-3 hover:bg-accent transition-colors text-left w-full",
-                        !n.read && "bg-primary/5"
-                      )}
-                    >
-                      <span className="text-sm">{n.message}</span>
-                      <span className="text-xs text-muted-foreground">{timeAgo(n.createdAt)}</span>
-                    </Link>
-                  ) : (
-                    <div className={cn("flex flex-col gap-0.5 px-4 py-3", !n.read && "bg-primary/5")}>
-                      <span className="text-sm">{n.message}</span>
-                      <span className="text-xs text-muted-foreground">{timeAgo(n.createdAt)}</span>
-                    </div>
-                  )}
-                </li>
+                <NotificationItem key={n.id} n={n} onClose={() => setOpen(false)} />
               ))}
             </ul>
           )}

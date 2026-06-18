@@ -43,7 +43,8 @@ export async function createComment(data: { projectId: string; userId: string; c
         userId,
         "COMMENT_ADDED",
         `${comment.author.name} kommenterte på ${comment.project.title}`,
-        data.projectId
+        data.projectId,
+        comment.content.slice(0, 150)
       )
     )
   );

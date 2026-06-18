@@ -26,6 +26,7 @@ model Notification {
   userId    String
   type      NotificationType
   message   String
+  detail    String?
   projectId String?
   read      Boolean  @default(false)
   createdAt DateTime @default(now())

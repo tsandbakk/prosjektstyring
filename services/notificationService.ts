@@ -5,10 +5,11 @@ export async function createNotification(
   userId: string,
   type: NotificationType,
   message: string,
-  projectId?: string
+  projectId?: string,
+  detail?: string
 ) {
   return prisma.notification.create({
-    data: { userId, type, message, projectId },
+    data: { userId, type, message, projectId, detail },
   });
 }
 
