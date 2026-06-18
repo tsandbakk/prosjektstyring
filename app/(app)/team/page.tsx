@@ -6,6 +6,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import { InviteButton } from "@/components/team/invite-button";
 
+type User = { id: string; name: string; email: string };
+type Project = { id: string; title: string; members: { userId: string }[] };
+
 function initials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
@@ -32,8 +35,8 @@ export default async function TeamPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {users.map((user) => {
-          const memberOf = projects.filter((p) => p.members.some((m) => m.userId === user.id));
+        {(users as User[]).map((user) => {
+          const memberOf = (projects as Project[]).filter((p) => p.members.some((m) => m.userId === user.id));
           return (
             <Card key={user.id}>
               <CardContent className="pt-5 pb-5">
