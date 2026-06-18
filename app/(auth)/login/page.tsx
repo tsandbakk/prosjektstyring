@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import Link from "next/link";
 import { FolderKanban, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +14,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const invited = searchParams.get("invited") === "1";
+  const reset = searchParams.get("reset") === "1";
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -54,6 +56,14 @@ function LoginForm() {
           </div>
         )}
 
+        {reset && (
+          <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800/50 px-4 py-3">
+            <p className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">
+              Passordet er oppdatert. Logg inn med det nye passordet.
+            </p>
+          </div>
+        )}
+
         <div className="rounded-xl border bg-card p-6 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
@@ -61,7 +71,15 @@ function LoginForm() {
               <Input id="email" name="email" type="email" autoComplete="email" required />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="password">Passord</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Passord</Label>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Glemt passord?
+                </Link>
+              </div>
               <Input
                 id="password"
                 name="password"
