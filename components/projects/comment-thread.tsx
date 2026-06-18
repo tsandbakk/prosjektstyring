@@ -78,7 +78,7 @@ export function CommentThread({ projectId, projectTitle, open, onOpenChange, onC
       .then((r) => r.json())
       .then((data: CommentWithAuthor[]) => {
         data.forEach((c) => knownIds.current.add(c.id));
-        latestTimestamp.current = data.at(-1)?.createdAt?.toString() ?? null;
+        latestTimestamp.current = data.at(-1)?.createdAt?.toString() ?? new Date().toISOString();
         setComments(data);
         setTimeout(() => scrollToBottom(false), 50);
       });
@@ -155,7 +155,6 @@ export function CommentThread({ projectId, projectTitle, open, onOpenChange, onC
       const comment: CommentWithAuthor = await res.json();
       knownIds.current.delete(tempId);
       knownIds.current.add(comment.id);
-      latestTimestamp.current = comment.createdAt.toString();
       setComments((prev) => prev.map((c) => (c.id === tempId ? comment : c)));
       onCommentAdded(comment);
     } else {
