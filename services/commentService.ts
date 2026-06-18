@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { createNotification } from "./notificationService";
 
 export type CommentWithAuthor = Awaited<ReturnType<typeof getComments>>[number];
 
@@ -24,8 +25,28 @@ export async function getRecentComments(limit = 15) {
 }
 
 export async function createComment(data: { projectId: string; userId: string; content: string }) {
-  return prisma.comment.create({
+  const comment = await prisma.comment.create({
     data,
-    include: { author: { select: { id: true, name: true } } },
+    include: {
+      author: { select: { id: true, name: true } },
+      project: { select: { title: true, members: { select: { userId: true } } } },
+    },
   });
+
+  const recipients = comment.project.members
+    .map((m) => m.userId)
+    .filter((id) => id !== data.userId);
+
+  await Promise.all(
+    recipients.map((userId) =>
+      createNotification(
+        userId,
+        "COMMENT_ADDED",
+        `${comment.author.name} kommenterte på ${comment.project.title}`,
+        data.projectId
+      )
+    )
+  );
+
+  return comment;
 }

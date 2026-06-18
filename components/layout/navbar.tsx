@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { NotificationBell } from "./notification-bell";
 
 const navItems = [
   { href: "/home", label: "Hjem", icon: Home },
@@ -59,6 +60,7 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-2">
+          <NotificationBell />
           <button
             onClick={toggle}
             className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"

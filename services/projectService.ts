@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { ProjectStatus } from "@prisma/client";
+import { createNotification } from "./notificationService";
 
 export type ProjectWithMembers = Awaited<ReturnType<typeof getProjects>>[number];
 
@@ -72,11 +73,29 @@ export async function updateProject(
 
   return prisma.$transaction(async (tx) => {
     if (memberIds !== undefined) {
+      const existing = await tx.usersOnProjects.findMany({
+        where: { projectId: id },
+        select: { userId: true },
+      });
+      const existingIds = new Set(existing.map((m) => m.userId));
+      const newIds = memberIds.filter((uid) => !existingIds.has(uid));
+
       await tx.usersOnProjects.deleteMany({ where: { projectId: id } });
       if (memberIds.length > 0) {
         await tx.usersOnProjects.createMany({
           data: memberIds.map((userId) => ({ userId, projectId: id })),
         });
+      }
+
+      if (newIds.length > 0) {
+        const project = await tx.project.findUnique({ where: { id }, select: { title: true } });
+        if (project) {
+          await Promise.all(
+            newIds.map((userId) =>
+              createNotification(userId, "ADDED_TO_PROJECT", `Du ble lagt til i ${project.title}`, id)
+            )
+          );
+        }
       }
     }
     return tx.project.update({

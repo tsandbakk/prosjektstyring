@@ -18,6 +18,23 @@ model User {
   weeklyProjects   WeeklyProject[]
   invites          Invite[]
   passwordResets   PasswordResetToken[]
+  notifications    Notification[]
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      NotificationType
+  message   String
+  projectId String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum NotificationType {
+  COMMENT_ADDED
+  ADDED_TO_PROJECT
 }
 
 model PasswordResetToken {

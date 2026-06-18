@@ -46,6 +46,7 @@ export function DashboardClient({ projects: initialProjects, users, currentUserI
   const [, startTransition] = useTransition();
   const [projects, setProjects] = useState(initialProjects);
   const [createOpen, setCreateOpen] = useState(false);
+  const [showMine, setShowMine] = useState(true);
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | "ALL">("ALL");
   const [memberFilters, setMemberFilters] = useState<string[]>([]);
   const [memberDropdownOpen, setMemberDropdownOpen] = useState(false);
@@ -229,6 +230,7 @@ export function DashboardClient({ projects: initialProjects, users, currentUserI
 
   const searchLower = search.toLowerCase();
   const filtered = projects.filter((p) => {
+    if (showMine && !p.members.some((m) => m.userId === currentUserId)) return false;
     if (statusFilter !== "ALL" && p.status !== statusFilter) return false;
     if (memberFilters.length > 0 && !memberFilters.every((uid) => p.members.some((m) => m.userId === uid))) return false;
     if (searchLower && !p.title.toLowerCase().includes(searchLower) && !(p.description ?? "").toLowerCase().includes(searchLower)) return false;
@@ -259,6 +261,28 @@ export function DashboardClient({ projects: initialProjects, users, currentUserI
           <Plus className="h-4 w-4 mr-2" />
           Nytt prosjekt
         </Button>
+      </div>
+
+      {/* Mine / Alle toggle */}
+      <div className="inline-flex rounded-lg border border-border p-0.5 bg-muted/40">
+        <button
+          onClick={() => setShowMine(true)}
+          className={cn(
+            "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+            showMine ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Mine
+        </button>
+        <button
+          onClick={() => setShowMine(false)}
+          className={cn(
+            "px-4 py-1.5 rounded-md text-sm font-medium transition-colors",
+            !showMine ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          Alle
+        </button>
       </div>
 
       {/* Search + Filters */}
