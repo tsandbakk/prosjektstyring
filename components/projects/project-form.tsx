@@ -15,7 +15,7 @@ type User = { id: string; name: string; email: string };
 interface Props {
   project?: ProjectWithMembers;
   users: User[];
-  onSuccess: () => void;
+  onSuccess: (project: ProjectWithMembers) => void;
   onCancel: () => void;
 }
 
@@ -70,7 +70,7 @@ export function ProjectForm({ project, users, onSuccess, onCancel }: Props) {
       const data = await res.json();
       setError(data.error ?? "Noe gikk galt.");
     } else {
-      onSuccess();
+      onSuccess(await res.json());
     }
   }
 

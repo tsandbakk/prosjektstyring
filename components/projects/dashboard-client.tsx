@@ -126,6 +126,15 @@ export function DashboardClient({ projects: initialProjects, users, currentUserI
     startTransition(() => router.refresh());
   }, [router]);
 
+  function handleProjectUpdated(project: ProjectWithMembers) {
+    setProjects((prev) => prev.map((p) => (p.id === project.id ? project : p)));
+  }
+
+  function handleProjectDeleted(id: string) {
+    setProjects((prev) => prev.filter((p) => p.id !== id));
+    setSelectedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
+  }
+
   function clearHighlight() {
     setHighlightedId(null);
     setOpenCommentsId(null);
@@ -561,7 +570,8 @@ export function DashboardClient({ projects: initialProjects, users, currentUserI
                           <ProjectListRow
                             project={project}
                             users={users}
-                            onMutate={refresh}
+                            onProjectUpdated={handleProjectUpdated}
+                            onProjectDeleted={handleProjectDeleted}
                             index={i}
                             isLast={i === filtered.length - 1}
                             selected={selectedIds.has(project.id)}
@@ -590,7 +600,7 @@ export function DashboardClient({ projects: initialProjects, users, currentUserI
           </DialogHeader>
           <ProjectForm
             users={users}
-            onSuccess={() => { setCreateOpen(false); refresh(); }}
+            onSuccess={(project) => { setCreateOpen(false); setProjects((prev) => [...prev, project]); }}
             onCancel={() => setCreateOpen(false)}
           />
         </DialogContent>

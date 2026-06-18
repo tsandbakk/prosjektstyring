@@ -1,7 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { cacheTag } from "next/cache";
 
 export async function getAllUsers() {
+  "use cache";
+  cacheTag("users");
   return prisma.user.findMany({
     select: { id: true, name: true, email: true },
     orderBy: { name: "asc" },

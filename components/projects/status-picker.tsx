@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ProjectStatus } from "@prisma/client";
+import type { ProjectWithMembers } from "@/services/projectService";
 import { ProjectStatusBadge } from "./project-status-badge";
 
 const statuses: ProjectStatus[] = ["ACTIVE", "PAUSED", "COMPLETED"];
@@ -15,7 +16,7 @@ const labels: Record<ProjectStatus, string> = {
 interface Props {
   projectId: string;
   status: ProjectStatus;
-  onChanged: (status: ProjectStatus) => void;
+  onChanged: (project: ProjectWithMembers) => void;
 }
 
 export function StatusPicker({ projectId, status, onChanged }: Props) {
@@ -26,12 +27,12 @@ export function StatusPicker({ projectId, status, onChanged }: Props) {
     setOpen(false);
     if (s === current) return;
     setCurrent(s);
-    onChanged(s);
-    await fetch(`/api/projects/${projectId}`, {
+    const res = await fetch(`/api/projects/${projectId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: s }),
     });
+    if (res.ok) onChanged(await res.json());
   }
 
   return (

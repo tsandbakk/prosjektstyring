@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { updateProject, deleteProject } from "@/services/projectService";
 import { prisma } from "@/lib/prisma";
+import { revalidateTag } from "next/cache";
 
 async function isMember(userId: string, projectId: string) {
   const row = await prisma.usersOnProjects.findUnique({
@@ -23,6 +24,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const data = await req.json();
   const project = await updateProject(id, data);
+  revalidateTag("projects", {});
   return NextResponse.json(project);
 }
 
@@ -37,5 +39,6 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   }
 
   await deleteProject(id);
+  revalidateTag("projects", {});
   return new NextResponse(null, { status: 204 });
 }

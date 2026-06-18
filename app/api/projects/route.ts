@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { createProject, getProjects } from "@/services/projectService";
+import { revalidateTag } from "next/cache";
 
 export async function GET() {
   const session = await auth();
@@ -19,5 +20,6 @@ export async function POST(req: Request) {
   }
 
   const project = await createProject({ title, description, status, memberIds });
+  revalidateTag("projects", {});
   return NextResponse.json(project, { status: 201 });
 }

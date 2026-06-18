@@ -117,6 +117,10 @@ export function HomeClient({ weeklyItems: initial, recentComments, currentUserId
     );
   }
 
+  function handleProjectStatus(projectId: string, project: import("@/services/projectService").ProjectWithMembers) {
+    handleStatusChange(projectId, project.status);
+  }
+
   async function handleAddProject(projectId: string) {
     const res = await fetch("/api/weekly", {
       method: "POST",
@@ -195,7 +199,7 @@ export function HomeClient({ weeklyItems: initial, recentComments, currentUserId
                               <StatusPicker
                                 projectId={item.projectId}
                                 status={item.project.status}
-                                onChanged={(s) => handleStatusChange(item.projectId, s)}
+                                onChanged={(p) => handleProjectStatus(item.projectId, p)}
                               />
                             </div>
                           </div>

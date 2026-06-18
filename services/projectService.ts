@@ -1,10 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { ProjectStatus } from "@prisma/client";
 import { createNotification } from "./notificationService";
+import { cacheTag } from "next/cache";
 
 export type ProjectWithMembers = Awaited<ReturnType<typeof getProjects>>[number];
 
 export async function getProjects(filters?: { status?: ProjectStatus; userId?: string }) {
+  "use cache";
+  cacheTag("projects");
   return prisma.project.findMany({
     where: {
       ...(filters?.status ? { status: filters.status } : {}),

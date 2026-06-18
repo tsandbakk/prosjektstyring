@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Pencil, Trash2, MessageCircle, Check, UserPlus } from "lucide-react";
 import { Draggable } from "@hello-pangea/dnd";
-import { ProjectStatus } from "@prisma/client";
 import { useSession } from "next-auth/react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -19,7 +18,8 @@ type User = { id: string; name: string; email: string };
 interface Props {
   project: ProjectWithMembers;
   users: User[];
-  onMutate: () => void;
+  onProjectUpdated: (project: ProjectWithMembers) => void;
+  onProjectDeleted: (id: string) => void;
   index: number;
   isLast: boolean;
   selected: boolean;
@@ -37,11 +37,11 @@ function initials(name: string) {
 function MemberPicker({
   project,
   users,
-  onMutate,
+  onProjectUpdated,
 }: {
   project: ProjectWithMembers;
   users: User[];
-  onMutate: () => void;
+  onProjectUpdated: (project: ProjectWithMembers) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -66,14 +66,14 @@ function MemberPicker({
 
   async function save() {
     setSaving(true);
-    await fetch(`/api/projects/${project.id}`, {
+    const res = await fetch(`/api/projects/${project.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ memberIds }),
     });
     setSaving(false);
     setOpen(false);
-    onMutate();
+    if (res.ok) onProjectUpdated(await res.json());
   }
 
   return (
@@ -153,7 +153,8 @@ function MemberPicker({
 export function ProjectListRow({
   project,
   users,
-  onMutate,
+  onProjectUpdated,
+  onProjectDeleted,
   index,
   isLast,
   selected,
@@ -191,12 +192,8 @@ export function ProjectListRow({
 
   async function handleDelete() {
     if (!confirm(`Slett "${project.title}"?`)) return;
+    onProjectDeleted(project.id);
     await fetch(`/api/projects/${project.id}`, { method: "DELETE" });
-    onMutate();
-  }
-
-  function handleStatusChange(_status: ProjectStatus) {
-    onMutate();
   }
 
   function handleRowClick() {
@@ -267,13 +264,13 @@ export function ProjectListRow({
               <StatusPicker
                 projectId={project.id}
                 status={project.status}
-                onChanged={handleStatusChange}
+                onChanged={onProjectUpdated}
               />
             </div>
 
             {/* Members — inline picker */}
             <div className="w-24 flex justify-center">
-              <MemberPicker project={project} users={users} onMutate={onMutate} />
+              <MemberPicker project={project} users={users} onProjectUpdated={onProjectUpdated} />
             </div>
 
             {/* Comments */}
@@ -336,7 +333,7 @@ export function ProjectListRow({
           <ProjectForm
             project={project}
             users={users}
-            onSuccess={() => { setEditOpen(false); onMutate(); }}
+            onSuccess={(updated) => { setEditOpen(false); onProjectUpdated(updated); }}
             onCancel={() => setEditOpen(false)}
           />
         </DialogContent>

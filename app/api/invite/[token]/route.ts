@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getValidInvite, redeemInvite } from "@/services/inviteService";
+import { revalidateTag } from "next/cache";
 
 export async function GET(
   _req: Request,
@@ -30,6 +31,7 @@ export async function POST(
 
   try {
     const user = await redeemInvite(token, { name, email, password });
+    revalidateTag("users", {});
     return NextResponse.json(user, { status: 201 });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "";
