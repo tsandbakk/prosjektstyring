@@ -4,7 +4,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   await resend.emails.send({
-    from: "Prosjektstyring <noreply@prosjektstyring-seven.vercel.app>",
+    from: "Prosjektstyring <onboarding@resend.dev>",
     to,
     subject: "Tilbakestill passord",
     html: `
