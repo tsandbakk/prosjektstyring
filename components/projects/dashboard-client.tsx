@@ -104,6 +104,15 @@ export function DashboardClient({ projects: initialProjects, users, currentUserI
   useEffect(() => { setProjects(initialProjects); }, [initialProjects]);
 
   useEffect(() => {
+    async function refreshProjects() {
+      const res = await fetch("/api/projects");
+      if (res.ok) setProjects(await res.json());
+    }
+    window.addEventListener("new-notifications", refreshProjects);
+    return () => window.removeEventListener("new-notifications", refreshProjects);
+  }, []);
+
+  useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setMemberDropdownOpen(false);

@@ -115,7 +115,10 @@ export function NotificationBell() {
 
     const newUnread = data.filter((n) => !n.read);
     const hasNew = newUnread.some((n) => !prevUnreadIds.current.has(n.id));
-    if (hasNew && prevUnreadIds.current.size > 0) playPling();
+    if (hasNew && prevUnreadIds.current.size > 0) {
+      playPling();
+      window.dispatchEvent(new CustomEvent("new-notifications"));
+    }
     prevUnreadIds.current = new Set(newUnread.map((n) => n.id));
   }, []);
 

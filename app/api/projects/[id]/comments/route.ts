@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getComments, createComment } from "@/services/commentService";
+import { revalidateTag } from "next/cache";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -18,5 +19,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { content } = await req.json();
   if (!content?.trim()) return NextResponse.json({ error: "Tomt innhold" }, { status: 400 });
   const comment = await createComment({ projectId: id, userId: session.user.id, content });
+  revalidateTag("projects", {});
   return NextResponse.json(comment, { status: 201 });
 }

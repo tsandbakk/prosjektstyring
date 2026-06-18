@@ -51,6 +51,8 @@ export function CommentThread({ projectId, projectTitle, open, onOpenChange, onC
   const bottomRef = useRef<HTMLDivElement>(null);
   const knownIds = useRef<Set<string>>(new Set());
   const latestTimestamp = useRef<string | null>(null);
+  const onCommentAddedRef = useRef(onCommentAdded);
+  useEffect(() => { onCommentAddedRef.current = onCommentAdded; }, [onCommentAdded]);
 
   // Re-render timestamps every minute
   useEffect(() => {
@@ -78,7 +80,7 @@ export function CommentThread({ projectId, projectTitle, open, onOpenChange, onC
       .then((r) => r.json())
       .then((data: CommentWithAuthor[]) => {
         data.forEach((c) => knownIds.current.add(c.id));
-        latestTimestamp.current = data.at(-1)?.createdAt?.toString() ?? new Date().toISOString();
+        latestTimestamp.current = data.at(-1)?.createdAt?.toString() ?? new Date(Date.now() - 5000).toISOString();
         setComments(data);
         setTimeout(() => scrollToBottom(false), 50);
       });
@@ -102,6 +104,7 @@ export function CommentThread({ projectId, projectTitle, open, onOpenChange, onC
     const wasAtBottom = isNearBottom();
     setComments((prev) => [...prev, ...newOnes]);
     if (wasAtBottom) setTimeout(() => scrollToBottom(), 50);
+    onCommentAddedRef.current(newOnes.at(-1)!);
     if (session?.user?.id) {
       localStorage.setItem(`comments_viewed_${session.user.id}_${projectId}`, Date.now().toString());
     }
