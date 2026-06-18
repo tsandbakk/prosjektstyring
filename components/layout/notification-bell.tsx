@@ -86,9 +86,12 @@ function NotificationItem({ n, onClose }: { n: Notification; onClose: () => void
   );
 
   if (n.projectId) {
+    const href = n.type === "COMMENT_ADDED"
+      ? `/dashboard?project=${n.projectId}&openComments=1`
+      : `/dashboard?project=${n.projectId}`;
     return (
       <li className="border-b border-border/50 last:border-0">
-        <Link href={`/dashboard?project=${n.projectId}`} onClick={onClose} className="block">
+        <Link href={href} onClick={onClose} className="block">
           {inner}
         </Link>
       </li>
@@ -150,6 +153,12 @@ export function NotificationBell() {
   }
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  // Update browser tab title
+  useEffect(() => {
+    const base = "Prosjektstyring";
+    document.title = unreadCount > 0 ? `(${unreadCount}) ${base}` : base;
+  }, [unreadCount]);
 
   return (
     <div ref={ref} className="relative">

@@ -46,6 +46,9 @@ export function DashboardClient({ projects: initialProjects, users, currentUserI
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
   const [highlightedId, setHighlightedId] = useState<string | null>(searchParams.get("project"));
+  const [openCommentsId, setOpenCommentsId] = useState<string | null>(
+    searchParams.get("openComments") === "1" ? searchParams.get("project") : null
+  );
   const [projects, setProjects] = useState(initialProjects);
   const [createOpen, setCreateOpen] = useState(false);
   const [showMine, setShowMine] = useState(true);
@@ -125,8 +128,10 @@ export function DashboardClient({ projects: initialProjects, users, currentUserI
 
   function clearHighlight() {
     setHighlightedId(null);
+    setOpenCommentsId(null);
     const params = new URLSearchParams(searchParams.toString());
     params.delete("project");
+    params.delete("openComments");
     router.replace(`/dashboard${params.size > 0 ? `?${params}` : ""}`, { scroll: false });
   }
 
@@ -563,6 +568,8 @@ export function DashboardClient({ projects: initialProjects, users, currentUserI
                             onToggleSelect={() => toggleSelect(project.id)}
                             highlighted={highlightedId === project.id}
                             onClearHighlight={clearHighlight}
+                            autoOpenComments={openCommentsId === project.id}
+                            onCommentsOpened={() => setOpenCommentsId(null)}
                           />
                         </div>
                       ))}

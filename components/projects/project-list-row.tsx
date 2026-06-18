@@ -26,6 +26,8 @@ interface Props {
   onToggleSelect: () => void;
   highlighted?: boolean;
   onClearHighlight?: () => void;
+  autoOpenComments?: boolean;
+  onCommentsOpened?: () => void;
 }
 
 function initials(name: string) {
@@ -158,10 +160,19 @@ export function ProjectListRow({
   onToggleSelect,
   highlighted,
   onClearHighlight,
+  autoOpenComments,
+  onCommentsOpened,
 }: Props) {
   const { data: session } = useSession();
   const [editOpen, setEditOpen] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
+
+  useEffect(() => {
+    if (autoOpenComments) {
+      setCommentOpen(true);
+      onCommentsOpened?.();
+    }
+  }, [autoOpenComments]); // eslint-disable-line react-hooks/exhaustive-deps
   const [commentCount, setCommentCount] = useState(project._count.comments);
   const [lastComment, setLastComment] = useState<CommentWithAuthor | null>(project.comments[0] ?? null);
   const [hasUnread, setHasUnread] = useState(false);
