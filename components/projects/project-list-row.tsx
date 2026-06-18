@@ -167,10 +167,15 @@ export function ProjectListRow({
   const [editOpen, setEditOpen] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
 
+  const hasAutoOpened = useRef(false);
   useEffect(() => {
-    if (autoOpenComments) {
-      setCommentOpen(true);
-      onCommentsOpened?.();
+    if (autoOpenComments && !hasAutoOpened.current) {
+      hasAutoOpened.current = true;
+      const t = setTimeout(() => {
+        setCommentOpen(true);
+        onCommentsOpened?.();
+      }, 200);
+      return () => clearTimeout(t);
     }
   }, [autoOpenComments]); // eslint-disable-line react-hooks/exhaustive-deps
   const [commentCount, setCommentCount] = useState(project._count.comments);

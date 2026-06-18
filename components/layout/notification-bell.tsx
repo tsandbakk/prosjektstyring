@@ -120,15 +120,22 @@ export function NotificationBell() {
   }, []);
 
   useEffect(() => {
-    // Unlock audio on first user interaction
     const unlock = () => { unlockAudio(); };
     document.addEventListener("click", unlock, { once: true });
     document.addEventListener("keydown", unlock, { once: true });
 
     fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
+
+    const interval = setInterval(() => {
+      if (document.visibilityState === "visible") fetchNotifications();
+    }, 15000);
+
+    const onVisible = () => { if (document.visibilityState === "visible") fetchNotifications(); };
+    document.addEventListener("visibilitychange", onVisible);
+
     return () => {
       clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
       document.removeEventListener("click", unlock);
       document.removeEventListener("keydown", unlock);
     };
