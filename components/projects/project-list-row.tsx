@@ -209,11 +209,11 @@ export function ProjectListRow({
             {...provided.draggableProps}
             onClick={handleRowClick}
             className={cn(
-              "grid grid-cols-[auto_auto_1fr_auto_auto_auto_auto] items-center px-4 py-3 group bg-background transition-colors",
+              "grid grid-cols-[auto_auto_1fr_auto_auto_auto_auto] items-center px-4 py-3 group bg-background transition-all duration-700",
               !isLast && "border-b border-border",
               snapshot.isDragging ? "shadow-lg opacity-90 rounded-md" : "hover:bg-muted/30",
               selected && "bg-primary/5",
-              highlighted && "bg-amber-50 dark:bg-amber-950/30 ring-1 ring-inset ring-amber-300 dark:ring-amber-700/50"
+              highlighted && "relative z-10 bg-blue-50/60 dark:bg-blue-950/30 ring-2 ring-inset ring-blue-400 dark:ring-blue-500/70 shadow-[0_0_18px_2px_rgba(59,130,246,0.45)]"
             )}
           >
             {/* Checkbox */}

@@ -160,9 +160,12 @@ export function DashboardClient({ projects: initialProjects, users, currentUserI
       (p) => p.id === highlightedId && p.members.some((m) => m.userId === currentUserId)
     );
     if (!inMine) setShowMine(false);
-    setTimeout(() => {
+    const scrollTimer = setTimeout(() => {
       document.getElementById(`project-row-${highlightedId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 100);
+    // Auto-clear the glow after 6 seconds
+    const clearTimer = setTimeout(() => clearHighlight(), 6000);
+    return () => { clearTimeout(scrollTimer); clearTimeout(clearTimer); };
   }, [highlightedId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleMember(id: string) {
